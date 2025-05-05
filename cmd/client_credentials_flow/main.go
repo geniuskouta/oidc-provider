@@ -16,24 +16,29 @@ func init() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	address := os.Getenv("OIDC_ADDRESS")
+	secretKey := os.Getenv("SECRET_KEY")
+
+	if address == "" || secretKey == "" {
+		log.Fatal("Missing required environment variables")
+	}
 }
 
 func main() {
-	secretKey := os.Getenv("SECRET_KEY")
-	if secretKey == "" {
-		log.Fatal("SECRET_KEY is required")
-	}
-
 	db := infra.NewDB()
 	clientRepo := repo.NewClientRepo(db)
 
 	clientCredentialsFlowUsecase := usecase.NewClientCredentialsFlow(clientRepo)
 	registerClientUsecase := usecase.NewRegisterClient(clientRepo)
+	openIDConfigUsecase := usecase.NewOpenIDConfig()
 
 	clientCredentialsFlowHandler := handler.NewClientCredentialsFlow(clientCredentialsFlowUsecase)
 	registerClientHandler := handler.NewRegisterClient(registerClientUsecase)
+	openIDConfigHandler := handler.NewOpenIDConfigHandler(openIDConfigUsecase)
 
 	http.HandleFunc("/token", clientCredentialsFlowHandler.Handle)
 	http.HandleFunc("/register", registerClientHandler.Handle)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	http.HandleFunc("/.well-known/openid-configuration", openIDConfigHandler.Handle)
+	log.Fatal(http.ListenAndServe(os.Getenv("OIDC_ADDRESS"), nil))
 }
