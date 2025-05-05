@@ -32,8 +32,12 @@ func (u *ClientCredentialsFlow) Handle(clientID, clientSecret, grantType, scope 
 		ClientSecret: clientSecret,
 	}
 
-	// Validate client credentials here in the usecase layer
-	if !isValidClient(*u.repo, client) {
+	client, err := u.repo.FindByClientID(clientID)
+	if err != nil || client == nil {
+		return nil, fmt.Errorf("unauthorized_client")
+	}
+
+	if !isValidClientSecret(client, clientSecret) {
 		return nil, fmt.Errorf("invalid_client")
 	}
 
@@ -46,12 +50,6 @@ func (u *ClientCredentialsFlow) Handle(clientID, clientSecret, grantType, scope 
 	return token, nil
 }
 
-func isValidClient(repo repo.ClientRepository, client *domain.Client) bool {
-	target, err := repo.FindByClientID(client.ClientID)
-
-	if err != nil || target == nil {
-		return false
-	}
-
-	return subtle.ConstantTimeCompare([]byte(client.ClientSecret), []byte(target.ClientSecret)) == 1
+func isValidClientSecret(client *domain.Client, clientSecret string) bool {
+	return subtle.ConstantTimeCompare([]byte(client.ClientSecret), []byte(clientSecret)) == 1
 }
