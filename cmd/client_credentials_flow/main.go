@@ -6,6 +6,7 @@ import (
 	"oidc/internal/oidc/handler"
 	"oidc/internal/oidc/infra"
 	"oidc/internal/oidc/repo"
+	"oidc/internal/oidc/service"
 	"oidc/internal/oidc/usecase"
 	"os"
 
@@ -28,8 +29,13 @@ func init() {
 func main() {
 	db := infra.NewDB()
 	clientRepo := repo.NewClientRepo(db)
+	tokenService, err := service.NewTokenService()
 
-	clientCredentialsFlowUsecase := usecase.NewClientCredentialsFlow(clientRepo)
+	if err != nil {
+		log.Fatalf("failed to initialize token service: %v", err)
+	}
+
+	clientCredentialsFlowUsecase := usecase.NewClientCredentialsFlow(clientRepo, tokenService)
 	registerClientUsecase := usecase.NewRegisterClient(clientRepo)
 	openIDConfigUsecase := usecase.NewOpenIDConfig()
 

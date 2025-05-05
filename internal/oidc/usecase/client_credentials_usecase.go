@@ -5,19 +5,18 @@ import (
 	"fmt"
 	"oidc/internal/oidc/domain"
 	"oidc/internal/oidc/repo"
-	"os"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
+	"oidc/internal/oidc/service"
 )
 
 type ClientCredentialsFlow struct {
-	repo *repo.ClientRepository
+	repo    *repo.ClientRepository
+	service *service.TokenService
 }
 
-func NewClientCredentialsFlow(repo *repo.ClientRepository) *ClientCredentialsFlow {
+func NewClientCredentialsFlow(repo *repo.ClientRepository, service *service.TokenService) *ClientCredentialsFlow {
 	return &ClientCredentialsFlow{
-		repo: repo,
+		repo:    repo,
+		service: service,
 	}
 }
 
@@ -38,24 +37,10 @@ func (u *ClientCredentialsFlow) Handle(clientID, clientSecret, grantType, scope 
 		return nil, fmt.Errorf("invalid_client")
 	}
 
-	// Load the secret key from environment variable
-	secretKey := []byte(os.Getenv("SECRET_KEY"))
-	if secretKey == nil || len(secretKey) == 0 {
-		return nil, fmt.Errorf("secret key is missing")
-	}
-
 	// Generate the access token
-	accessToken, err := generateAccessToken(clientID, scope, secretKey)
+	token, err := u.service.GenerateToken(clientID, scope)
 	if err != nil {
 		return nil, fmt.Errorf("server_error: %v", err)
-	}
-
-	// Return the token response
-	token := &domain.Token{
-		AccessToken: accessToken,
-		TokenType:   "Bearer",
-		ExpiresIn:   3600,
-		Scope:       scope,
 	}
 
 	return token, nil
@@ -69,26 +54,4 @@ func isValidClient(repo repo.ClientRepository, client *domain.Client) bool {
 	}
 
 	return subtle.ConstantTimeCompare([]byte(client.ClientSecret), []byte(target.ClientSecret)) == 1
-}
-
-func generateAccessToken(clientID, scope string, secretKey []byte) (string, error) {
-	// Create JWT claims
-	claims := &jwt.RegisteredClaims{
-		Issuer:    "my-auth-server",                                  // Issuer identifier (Auth server)
-		Subject:   clientID,                                          // Subject (the client ID)
-		Audience:  []string{"my-api"},                                // Audience (the resource server)
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)), // 1 hour expiry
-		IssuedAt:  jwt.NewNumericDate(time.Now()),                    // Issued at
-	}
-
-	// Create a new token using the claims
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	// Sign the token with the secret key
-	tokenString, err := token.SignedString(secretKey)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
 }
