@@ -1,15 +1,27 @@
 package usecase
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"oidc/internal/oidc/domain"
+	"oidc/internal/oidc/repo"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func ClientCredentialsFlow(clientID, clientSecret, grantType, scope string) (*domain.Token, error) {
+type ClientCredentialsFlow struct {
+	repo *repo.ClientRepository
+}
+
+func NewClientCredentialsFlow(repo *repo.ClientRepository) *ClientCredentialsFlow {
+	return &ClientCredentialsFlow{
+		repo: repo,
+	}
+}
+
+func (u *ClientCredentialsFlow) Handle(clientID, clientSecret, grantType, scope string) (*domain.Token, error) {
 	// Validate grant_type
 	if grantType != "client_credentials" {
 		return nil, fmt.Errorf("unsupported_grant_type")
@@ -22,7 +34,7 @@ func ClientCredentialsFlow(clientID, clientSecret, grantType, scope string) (*do
 	}
 
 	// Validate client credentials here in the usecase layer
-	if !isValidClient(client) {
+	if !isValidClient(*u.repo, client) {
 		return nil, fmt.Errorf("invalid_client")
 	}
 
@@ -49,8 +61,14 @@ func ClientCredentialsFlow(clientID, clientSecret, grantType, scope string) (*do
 	return token, nil
 }
 
-func isValidClient(client *domain.Client) bool {
-	return client.ClientID == "my-client-id" && client.ClientSecret == "my-client-secret"
+func isValidClient(repo repo.ClientRepository, client *domain.Client) bool {
+	target, err := repo.FindByClientID(client.ClientID)
+
+	if err != nil || target == nil {
+		return false
+	}
+
+	return subtle.ConstantTimeCompare([]byte(client.ClientSecret), []byte(target.ClientSecret)) == 1
 }
 
 func generateAccessToken(clientID, scope string, secretKey []byte) (string, error) {

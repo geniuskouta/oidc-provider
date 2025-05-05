@@ -4,6 +4,9 @@ import (
 	"log"
 	"net/http"
 	"oidc/internal/oidc/handler"
+	"oidc/internal/oidc/infra"
+	"oidc/internal/oidc/repo"
+	"oidc/internal/oidc/usecase"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -20,6 +23,17 @@ func main() {
 	if secretKey == "" {
 		log.Fatal("SECRET_KEY is required")
 	}
-	http.HandleFunc("/token", handler.ClientCredentialsFlow)
+
+	db := infra.NewDB()
+	clientRepo := repo.NewClientRepo(db)
+
+	clientCredentialsFlowUsecase := usecase.NewClientCredentialsFlow(clientRepo)
+	registerClientUsecase := usecase.NewRegisterClient(clientRepo)
+
+	clientCredentialsFlowHandler := handler.NewClientCredentialsFlow(clientCredentialsFlowUsecase)
+	registerClientHandler := handler.NewRegisterClient(registerClientUsecase)
+
+	http.HandleFunc("/token", clientCredentialsFlowHandler.Handle)
+	http.HandleFunc("/register", registerClientHandler.Handle)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

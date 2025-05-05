@@ -8,8 +8,17 @@ import (
 	"oidc/internal/oidc/usecase"
 )
 
-// TokenHandler processes the /token endpoint for the client_credentials flow.
-func ClientCredentialsFlow(w http.ResponseWriter, r *http.Request) {
+type ClientCredentialsFlow struct {
+	usecase *usecase.ClientCredentialsFlow
+}
+
+func NewClientCredentialsFlow(usecase *usecase.ClientCredentialsFlow) *ClientCredentialsFlow {
+	return &ClientCredentialsFlow{
+		usecase: usecase,
+	}
+}
+
+func (h *ClientCredentialsFlow) Handle(w http.ResponseWriter, r *http.Request) {
 	// Ensure it's a POST request
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -33,16 +42,14 @@ func ClientCredentialsFlow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Call the usecase to handle the token request
-	tokenResp, err := usecase.ClientCredentialsFlow(clientID, clientSecret, req.GrantType, req.Scope)
+	token, err := h.usecase.Handle(clientID, clientSecret, req.GrantType, req.Scope)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Prepare and send the JSON response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tokenResp)
+	json.NewEncoder(w).Encode(token)
 }
 
 // Helper function to extract client credentials from Basic Auth header
