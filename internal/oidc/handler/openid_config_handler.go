@@ -17,11 +17,6 @@ func NewOpenIDConfigHandler(usecase *usecase.OpenIDConfig) *OpenIDConfig {
 }
 
 func (h *OpenIDConfig) Handle(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
 	usecase := usecase.NewOpenIDConfig()
 	config := usecase.Get()
 

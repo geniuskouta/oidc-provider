@@ -18,11 +18,6 @@ func NewRegisterClient(usecase *usecase.RegisterClient) *RegisterClient {
 }
 
 func (h *RegisterClient) Handle(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req struct {
 		ClientName   string   `json:"client_name"`
 		RedirectURIs []string `json:"redirect_uris"`

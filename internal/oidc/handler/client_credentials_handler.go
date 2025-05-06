@@ -19,12 +19,6 @@ func NewClientCredentialsFlow(usecase *usecase.ClientCredentialsFlow) *ClientCre
 }
 
 func (h *ClientCredentialsFlow) Handle(w http.ResponseWriter, r *http.Request) {
-	// Ensure it's a POST request
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Extract client credentials from Basic Auth header
 	clientID, clientSecret, err := extractClientCredentials(r)
 	if err != nil {

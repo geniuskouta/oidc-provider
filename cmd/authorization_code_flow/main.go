@@ -10,6 +10,7 @@ import (
 	"oidc/internal/oidc/usecase"
 	"os"
 
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -46,15 +47,22 @@ func main() {
 	registerClientUsecase := usecase.NewRegisterClient(clientRepo)
 	openIDConfigUsecase := usecase.NewOpenIDConfig()
 
+	// Create the handlers
 	authorizationCodeFlowHandler := handler.NewAuthorizationCodeFlow(authorizationCodeFlowUsecase)
 	registerClientHandler := handler.NewRegisterClient(registerClientUsecase)
 	openIDConfigHandler := handler.NewOpenIDConfigHandler(openIDConfigUsecase)
 
-	http.HandleFunc("/signup", authorizationCodeFlowHandler.HandleSignUpUser)
-	http.HandleFunc("/authorize", authorizationCodeFlowHandler.StartAuthorization)
-	http.HandleFunc("/login", authorizationCodeFlowHandler.HandleAuthorizationCode)
-	http.HandleFunc("/token", authorizationCodeFlowHandler.HandleToken)
-	http.HandleFunc("/register", registerClientHandler.Handle)
-	http.HandleFunc("/.well-known/openid-configuration", openIDConfigHandler.Handle)
-	log.Fatal(http.ListenAndServe(os.Getenv("OIDC_ADDRESS"), nil))
+	// Create a new Mux router
+	r := mux.NewRouter()
+
+	// Define the routes and associate handlers
+	r.HandleFunc("/signup", authorizationCodeFlowHandler.HandleSignUpUser).Methods("POST")
+	r.HandleFunc("/authorize", authorizationCodeFlowHandler.StartAuthorization).Methods("GET")
+	r.HandleFunc("/login", authorizationCodeFlowHandler.HandleAuthorizationCode).Methods("POST")
+	r.HandleFunc("/token", authorizationCodeFlowHandler.HandleToken).Methods("POST")
+	r.HandleFunc("/register", registerClientHandler.Handle).Methods("POST")
+	r.HandleFunc("/.well-known/openid-configuration", openIDConfigHandler.Handle).Methods("GET")
+
+	// Start the HTTP server with the Mux router
+	log.Fatal(http.ListenAndServe(os.Getenv("OIDC_ADDRESS"), r))
 }

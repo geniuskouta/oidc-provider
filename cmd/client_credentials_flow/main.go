@@ -10,6 +10,7 @@ import (
 	"oidc/internal/oidc/usecase"
 	"os"
 
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
@@ -43,8 +44,10 @@ func main() {
 	registerClientHandler := handler.NewRegisterClient(registerClientUsecase)
 	openIDConfigHandler := handler.NewOpenIDConfigHandler(openIDConfigUsecase)
 
-	http.HandleFunc("/token", clientCredentialsFlowHandler.Handle)
-	http.HandleFunc("/register", registerClientHandler.Handle)
-	http.HandleFunc("/.well-known/openid-configuration", openIDConfigHandler.Handle)
-	log.Fatal(http.ListenAndServe(os.Getenv("OIDC_ADDRESS"), nil))
+	r := mux.NewRouter()
+
+	r.HandleFunc("/token", clientCredentialsFlowHandler.Handle).Methods("POST")
+	r.HandleFunc("/register", registerClientHandler.Handle).Methods("POST")
+	r.HandleFunc("/.well-known/openid-configuration", openIDConfigHandler.Handle).Methods("GET")
+	log.Fatal(http.ListenAndServe(os.Getenv("OIDC_ADDRESS"), r))
 }

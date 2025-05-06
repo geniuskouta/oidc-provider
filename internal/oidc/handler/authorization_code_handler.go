@@ -16,11 +16,6 @@ func NewAuthorizationCodeFlow(usecase *usecase.AuthorizationCodeFlow) *Authoriza
 }
 
 func (h *AuthorizationCodeFlow) HandleSignUpUser(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
 	var req struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -52,11 +47,6 @@ func (h *AuthorizationCodeFlow) HandleSignUpUser(w http.ResponseWriter, r *http.
 }
 
 func (h *AuthorizationCodeFlow) StartAuthorization(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
 	clientID := r.URL.Query().Get("client_id")
 	redirectURI := r.URL.Query().Get("redirect_uri")
 	scope := r.URL.Query().Get("scope")
@@ -71,11 +61,6 @@ func (h *AuthorizationCodeFlow) StartAuthorization(w http.ResponseWriter, r *htt
 }
 
 func (h *AuthorizationCodeFlow) HandleAuthorizationCode(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
 	// Parse form input (POSTed by the login form)
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form submission", http.StatusBadRequest)
@@ -107,11 +92,6 @@ func (h *AuthorizationCodeFlow) HandleAuthorizationCode(w http.ResponseWriter, r
 }
 
 func (h *AuthorizationCodeFlow) HandleToken(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "invalid_request", http.StatusBadRequest)
 		return
