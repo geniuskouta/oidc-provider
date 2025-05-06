@@ -7,6 +7,7 @@ import (
 	"oidc/internal/oidc/infra"
 	"oidc/internal/oidc/repo"
 	"oidc/internal/oidc/service"
+	"oidc/internal/oidc/templates"
 	"oidc/internal/oidc/usecase"
 	"os"
 
@@ -47,8 +48,14 @@ func main() {
 	registerClientUsecase := usecase.NewRegisterClient(clientRepo)
 	openIDConfigUsecase := usecase.NewOpenIDConfig()
 
+	templateEngine, err := templates.NewEngine("internal/oidc/templates")
+	if err != nil {
+		log.Fatalf("failed to load templates: %v", err)
+	}
+
 	// Create the handlers
 	authorizationCodeFlowHandler := handler.NewAuthorizationCodeFlow(authorizationCodeFlowUsecase)
+	pageHandler := handler.NewPageHandler(templateEngine)
 	registerClientHandler := handler.NewRegisterClient(registerClientUsecase)
 	openIDConfigHandler := handler.NewOpenIDConfigHandler(openIDConfigUsecase)
 
@@ -58,6 +65,7 @@ func main() {
 	// Define the routes and associate handlers
 	r.HandleFunc("/signup", authorizationCodeFlowHandler.HandleSignUpUser).Methods("POST")
 	r.HandleFunc("/authorize", authorizationCodeFlowHandler.StartAuthorization).Methods("GET")
+	r.HandleFunc("/login", pageHandler.RenderLoginPage).Methods("GET")
 	r.HandleFunc("/login", authorizationCodeFlowHandler.HandleAuthorizationCode).Methods("POST")
 	r.HandleFunc("/token", authorizationCodeFlowHandler.HandleToken).Methods("POST")
 	r.HandleFunc("/register", registerClientHandler.Handle).Methods("POST")

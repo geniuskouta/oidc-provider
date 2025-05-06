@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login Page - OIDC Provider </title>
+</head>
+
+<body>
+    <form method="POST" action="/login">
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Password" required />
+
+        <!-- Preserve OIDC request context -->
+        <input type="hidden" name="client_id" value="{{.ClientID}}" />
+        <input type="hidden" name="redirect_uri" value="{{.RedirectURI}}" />
+        <input type="hidden" name="scope" value="{{.Scope}}" />
+        <button type="submit">Login</button>
+    </form>
+</body>
+
+</html>

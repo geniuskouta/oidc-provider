@@ -9,6 +9,8 @@ import (
 	"oidc/internal/oidc/service"
 	"time"
 
+	"net/url"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -44,7 +46,12 @@ func (u *AuthorizationCodeFlow) GetLoginUrl(clientID, redirectURI, scope string)
 		return "", fmt.Errorf("invalid_redirect_uri")
 	}
 
-	return "/login?client_id=" + clientID + "&redirect_uri=" + redirectURI + "&scope=" + scope, nil
+	values := url.Values{}
+	values.Set("client_id", clientID)
+	values.Set("redirect_uri", redirectURI)
+	values.Set("scope", scope)
+
+	return "/login?" + values.Encode(), nil
 }
 
 func (u *AuthorizationCodeFlow) SignUp(email, password string) error {

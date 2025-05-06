@@ -37,7 +37,7 @@ curl -G http://localhost:8080/authorize \
 ## POST /login
 
 ```
-curl -v -X POST http://localhost:8080/login \
+curl -vL -X POST http://localhost:8080/login \
   -d "email=user@example.com" \
   -d "password=securePassword123" \
   -d "client_id=my-client-id" \
