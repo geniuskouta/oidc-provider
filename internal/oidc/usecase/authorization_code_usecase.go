@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"oidc/internal/oidc/domain"
 	"oidc/internal/oidc/repo"
@@ -9,20 +10,73 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthorizationCodeFlow struct {
 	clientRepo   *repo.ClientRepository
 	authCodeRepo *repo.AuthCodeRepository
+	userRepo     *repo.UserRepository
 	service      *service.TokenService
 }
 
-func NewAuthorizationCodeFlow(clientRepo *repo.ClientRepository, authCodeRepo *repo.AuthCodeRepository, service *service.TokenService) *AuthorizationCodeFlow {
+func NewAuthorizationCodeFlow(
+	clientRepo *repo.ClientRepository,
+	authCodeRepo *repo.AuthCodeRepository,
+	userRepo *repo.UserRepository,
+	service *service.TokenService,
+) *AuthorizationCodeFlow {
 	return &AuthorizationCodeFlow{
 		clientRepo:   clientRepo,
 		authCodeRepo: authCodeRepo,
+		userRepo:     userRepo,
 		service:      service,
 	}
+}
+
+func (u *AuthorizationCodeFlow) GetLoginUrl(clientID, redirectURI, scope string) (string, error) {
+	client, err := u.clientRepo.FindByClientID(clientID)
+	if err != nil || client == nil {
+		return "", fmt.Errorf("unauthorized_client")
+	}
+
+	if !isValidRedirectUri(client, redirectURI) {
+		return "", fmt.Errorf("invalid_redirect_uri")
+	}
+
+	return "/login?client_id=" + clientID + "&redirect_uri=" + redirectURI + "&scope=" + scope, nil
+}
+
+func (u *AuthorizationCodeFlow) SignUp(email, password string) error {
+	// Check if already exists
+	existing, _ := u.userRepo.FindByEmail(email)
+	if existing != nil {
+		return errors.New("user already exists")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	return u.userRepo.Save(&domain.User{
+		ID:       uuid.NewString(),
+		Email:    email,
+		Password: string(hash),
+	})
+}
+
+func (u *AuthorizationCodeFlow) AuthenticateUser(email, password string) (bool, error) {
+	user, err := u.userRepo.FindByEmail(email)
+	if err != nil || user == nil {
+		return false, errors.New("user not found")
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return false, errors.New("invalid credentials")
+	}
+
+	return true, nil
 }
 
 func (u *AuthorizationCodeFlow) Authorize(clientID, redirectURI, scope string) (string, error) {

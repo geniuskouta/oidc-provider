@@ -29,6 +29,7 @@ func init() {
 func main() {
 	db := infra.NewDB()
 	clientRepo := repo.NewClientRepo(db)
+	userRepo := repo.NewUserRepo(db)
 	authCodeRepo := repo.NewAuthCodeRepo(db)
 	tokenService, err := service.NewTokenService()
 
@@ -36,7 +37,12 @@ func main() {
 		log.Fatalf("failed to initialize token service: %v", err)
 	}
 
-	authorizationCodeFlowUsecase := usecase.NewAuthorizationCodeFlow(clientRepo, authCodeRepo, tokenService)
+	authorizationCodeFlowUsecase := usecase.NewAuthorizationCodeFlow(
+		clientRepo,
+		authCodeRepo,
+		userRepo,
+		tokenService,
+	)
 	registerClientUsecase := usecase.NewRegisterClient(clientRepo)
 	openIDConfigUsecase := usecase.NewOpenIDConfig()
 
@@ -44,7 +50,9 @@ func main() {
 	registerClientHandler := handler.NewRegisterClient(registerClientUsecase)
 	openIDConfigHandler := handler.NewOpenIDConfigHandler(openIDConfigUsecase)
 
-	http.HandleFunc("/authorize", authorizationCodeFlowHandler.HandleAuthorizationCode)
+	http.HandleFunc("/signup", authorizationCodeFlowHandler.HandleSignUpUser)
+	http.HandleFunc("/authorize", authorizationCodeFlowHandler.StartAuthorization)
+	http.HandleFunc("/login", authorizationCodeFlowHandler.HandleAuthorizationCode)
 	http.HandleFunc("/token", authorizationCodeFlowHandler.HandleToken)
 	http.HandleFunc("/register", registerClientHandler.Handle)
 	http.HandleFunc("/.well-known/openid-configuration", openIDConfigHandler.Handle)

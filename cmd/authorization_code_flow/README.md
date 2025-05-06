@@ -17,6 +17,14 @@ curl -X POST http://localhost:8080/register \
   }'
 ```
 
+## POST /signup
+
+```
+curl -X POST http://localhost:8080/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "securePassword123"}'
+```
+
 ## POST /authorize
 
 ```
@@ -25,6 +33,18 @@ curl -G http://localhost:8080/authorize \
   --data-urlencode "redirect_uri=http://localhost:3000/callback" \
   --data-urlencode "scope=openid"
 ```
+
+## POST /login
+
+```
+curl -v -X POST http://localhost:8080/login \
+  -d "email=user@example.com" \
+  -d "password=securePassword123" \
+  -d "client_id=my-client-id" \
+  -d "redirect_uri=http://localhost:3000/callback" \
+  -d "scope=openid"
+```
+
 
 ## POST /token
 
